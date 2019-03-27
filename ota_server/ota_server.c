@@ -7,13 +7,49 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <fcntl.h>
+#include <sys/stat.h>
 
-#define MAX     80
-#define PORT    8080
 
+#define MAX         80
+#define PORT        8080
+#define F_BUF_SIZE  1024
+
+
+static void send_file(int sockfd, int fd, void *buffer) 
+{
+    char rbuff[MAX];
+    int n;
+    off_t m;
+
+    for (;;) {
+        bzero(rbuff, MAX);
+
+        read(sockfd, rbuff, sizeof(rbuff));
+
+        printf("%s", rbuff);
+        bzero(rbuff, MAX);
+        n = 0;
+
+        // read filestream and send file to client
+        n = read(fd, buffer, F_BUF_SIZE);
+        while(n) {
+            if ( n == -1 ) {
+                printf("File read error \n");
+                exit(0);
+            }
+            write(sockfd, buffer, F_BUF_SIZE);
+
+            if ( strncmp("exit", rbuff, 4) == 0 ) {
+                printf("Server Exit...\n"); 
+                break;
+            }
+        }
+    }
+}
 
 // Function designed for chat between client and server.
-void chatting(int sockfd)
+static void chatting(int sockfd)
 {
     char buff[MAX];
     int n;
@@ -46,11 +82,30 @@ void chatting(int sockfd)
 }
 
 // Driver function
-int main()
+int main(int argc, char **argv)
 {
     int sockfd, connfd;
     socklen_t len;
     struct sockaddr_in servaddr, client;
+#ifdef OTA
+    int fd;
+    struct stat fstat;
+    char fbuffer[F_BUF_SIZE];
+    off_t sz;
+
+    if ( (fd = open(argv[1], O_RDONLY)) == -1 ) {
+        printf("file open error \n");
+        exit(0);
+    } 
+    
+    if ( stat(argv[1], &fstat) == -1 ) {
+        printf("stat error \n");
+        exit(0);
+    } else
+        sz = fstat.st_size;
+    
+    bzero(&fbuffer, F_BUF_SIZE);
+#endif
 
     // socket create and verification
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -102,8 +157,12 @@ int main()
         printf("connected @ client : %s:%d \n", dest, client_port);
     }
 
+#if OTA
+    send_file(connfd, fd, &fbuffer);
+#else
     // Function for chatting between client and server
     chatting(connfd);
+#endif
 
     // After chatting close the socket
     close(sockfd);
