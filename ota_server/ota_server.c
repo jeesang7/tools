@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <netdb.h>
-#include <netinet/in.h>
+#include <arpa/inet.h> // <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -71,16 +71,14 @@ int main()
     if ( (bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr))) != 0 ) {
         printf("socket bind failed...\n");
         exit(0);
-    }
-    else
+    } else
         printf("Socket successfully binded..\n");
 
     // Now server is ready to listen and verification
     if ( (listen(sockfd, 5)) != 0 ) {
         printf("Listen failed...\n");
         exit(0);
-    }
-    else
+    } else
         printf("Server listening..\n");
 
     len = sizeof(client);
@@ -90,9 +88,19 @@ int main()
     if (connfd < 0) {
         printf("server acccept failed...\n");
         exit(0);
-    }
-    else
+    } else
         printf("server acccept the client...\n");
+
+    char dest[INET_ADDRSTRLEN];
+    unsigned short client_port;
+
+    if ( inet_ntop(AF_INET, &client.sin_addr, dest, INET_ADDRSTRLEN) == NULL ) {
+        printf("inet_ntop error... \n");
+        exit(0);
+    } else {
+        client_port = ntohs(client.sin_port);
+        printf("connected @ client : %s:%d \n", dest, client_port);
+    }
 
     // Function for chatting between client and server
     chatting(connfd);
