@@ -48,7 +48,7 @@ static void send_file(int sockfd, int fd, void *buffer)
     }
 }
 
-// Function designed for chat between client and server.
+// function designed for chat between client and server.
 static void chatting(int sockfd)
 {
     char buff[MAX];
@@ -81,7 +81,6 @@ static void chatting(int sockfd)
     }
 }
 
-// Driver function
 int main(int argc, char **argv)
 {
     int sockfd, connfd;
